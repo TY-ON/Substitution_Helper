@@ -1,0 +1,51 @@
+@font-face {
+  font-family: 'D2Coding';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_three@1.0/D2Coding.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.App {
+  font-family: 'D2Coding';
+  text-align: start;
+}
+
+* {
+  margin: 0px;
+  padding: 5px;
+}
+
+textarea#cipher_text {
+  width: 500px;
+  height: 100px;
+  resize: none;
+}
+
+#CipherMenu {
+  width: 520px;
+}
+
+#board {
+  width: 520px;
+}
+
+#wrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+#text_box {
+  position: relative;
+}
+
+#Controller {
+  position: relative;
+}
+
+input#substitution {
+  width: 50px;
+}
+
+table {
+  align-self: flex-start;
+}
