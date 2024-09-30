@@ -49,3 +49,9 @@ input#substitution {
 table {
   align-self: flex-start;
 }
+
+header {
+  display: flex;
+  margin: 0px;
+  
+}
