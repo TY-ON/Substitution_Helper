@@ -87,27 +87,31 @@ export function Board({ cipher_text, substitution_mapper }) {
   );
 }
 
-function ControllerTr({ getData, alphabet, substitution, statistics }) {
+function ControllerTr({ getData, alphabet, substitution, statistics, marked, get_marked, index }) {
   const postData = event => {
     if (typeof event.target.value === "undefined"){
       event.target.value = "-";
     }
     getData(event.target.name.charCodeAt(0)-0x41, event.target.value);
   };
+  
+  const post_marked = event => {
+    get_marked(index, event.target.checked);
+  }
 
   return (
     <tr>
       <th>{alphabet}</th>
       <th>
         <input name={alphabet} type='text' maxLength="1" id="substitution" value={substitution} onChange={postData} >
-        </input><input type="checkbox"></input>
+        </input><input type="checkbox" checked={marked} onChange={post_marked}></input>
       </th>
       <th id="statistics">{statistics}</th>
     </tr>
   );
 }
 
-export function ControllerTable({getData, statistics, substitution_mapper}) {
+export function ControllerTable({getData, statistics, substitution_mapper, marked, get_marked, index }) {
   const postData = (alphabet, substitution) => {
     getData(alphabet, substitution);
   };
@@ -117,6 +121,14 @@ export function ControllerTable({getData, statistics, substitution_mapper}) {
       substitution_mapper.push("None");
     }
   }
+
+  const post_marked = (i, mark) => {
+    let copy_marked = [...marked];
+    copy_marked[i] = mark;
+    get_marked(parseInt(index), i, copy_marked);
+  }
+
+  statistics = zip(statistics, marked);
 
   return (
     <table border="1" cellSpacing="0">
@@ -135,6 +147,9 @@ export function ControllerTable({getData, statistics, substitution_mapper}) {
           alphabet={s[0]}
           substitution={substitution_mapper[s[0].charCodeAt(0)-0x41]}
           statistics={s[1]}
+          marked={s[2]}
+          get_marked={post_marked}
+          index={i}
         />)}
       </tbody>
    </table>
@@ -237,7 +252,41 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
   const stat_2 = sort_statistics(stat);
   stat = calculate_n_statistics(cipher_text, 3);
   const stat_3 = sort_statistics(stat);
+
+  const [marked, set_marked] = useState([
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false]
+  ])
+
+  const get_marked = (key, index, mark) => {
+    let marked_copy = [...marked];
+    marked_copy[key] = mark;
+
+    if (key === 1) {
+      let i = sorted_statistics[index][0].charCodeAt(0)-0x41;
+      marked_copy[0][i] = marked_copy[key][index];
+    }
+    if (key === 0) {
+      let i = 0;
+      for (i = 0; i < 26; i++) {
+        if (sorted_statistics[i][0] === String.fromCharCode(0x41+index)) {
+          break;
+        }
+      }
+      marked_copy[1][i] = marked_copy[key][index];
+    }
+    set_marked(marked_copy);
+  };
   
+  const dummy_marked = [
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false]
+  ]
+
   return (
     <div id='Controller'>
       <div id='wrapper'>
@@ -247,11 +296,17 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
             getData={postData}
             statistics={statistics}
             substitution_mapper={substitution_mapper}
+            marked={marked[0]}
+            get_marked={get_marked}
+            index="0"
           />
           <ControllerTable
             getData={postData}
             statistics={sorted_statistics}
             substitution_mapper={substitution_mapper}
+            marked={marked[1]}
+            get_marked={get_marked}
+            index="1"
           />
         </div>
         <h4>Poly Statistics: </h4>
@@ -260,16 +315,20 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
             getData={postData}
             statistics={stat_2}
             substitution_mapper={false}
+            marked={dummy_marked}
+            get_marked={ (a, b, c) => {} }
           />
           <ControllerTable
             getData={postData}
             statistics={stat_3}
             substitution_mapper={false}
+            marked={dummy_marked}
+            get_marked={ (a, b, c) => {} }
           />
         </div>
       </div>
 
-      <div style={{display:"none"}}>{substitution_mapper[0]}{stat_2[0]}{stat_3[0]}</div>
+      <div style={{display:"none"}}>{substitution_mapper[0]}{stat_2[0]}{stat_3[0]}{marked[0]}</div>
     </div>
   );
 }

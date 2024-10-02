@@ -220,12 +220,37 @@ function SubPanel({ getData, cipher_text, slice_length, bias, substitution_mappe
 
   const statistics = sort_statistics(calculate_statistics(text, 1));
 
+  const [marked, set_marked] = useState([
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false]
+  ]);
+
+  useEffect( () => {
+    let marked = [];
+    for (let i = 0; i < slice_length; i++) {
+      marked.push([false, false, false, false, false, false, false, false, false, false, false, false, false, 
+        false, false, false, false, false, false, false, false, false, false, false, false, false]);
+    }
+    set_marked(marked);
+  }, [slice_length]);
+
+  const get_marked = (key, index, mark) => {
+    let marked_copy = [...marked];
+    marked_copy[key] = mark;
+    set_marked(marked_copy);
+  };
+
   return (
     <div id="panel">
       <ControllerTable
         getData={postData}
         statistics={statistics}
         substitution_mapper={substitution_mapper}
+        marked={marked[bias]}
+        get_marked={get_marked}
+        index={bias}
       />
     </div>
   );
