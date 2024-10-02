@@ -11,6 +11,8 @@
 }
 
 * {
+  font-family: 'D2Coding';
+  position:relative;
   margin: 0px;
   padding: 5px;
 }
@@ -34,14 +36,6 @@ textarea#cipher_text {
   flex-direction: row;
 }
 
-#text_box {
-  position: relative;
-}
-
-#Controller {
-  position: relative;
-}
-
 input#substitution {
   width: 50px;
 }
@@ -52,6 +46,16 @@ table {
 
 header {
   display: flex;
-  margin: 0px;
-  
+}
+
+#nav {
+  display: flex;
+}
+
+#on {
+  background-color: yellowgreen;
+}
+
+#find_length, #slice_length {
+  width: 50px;
 }

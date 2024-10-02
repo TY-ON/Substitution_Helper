@@ -21,19 +21,21 @@ export function CipherMenu({ getData, cipher_algorithm }) {
   );
 }
 
-function CompareText({ plain, cipher}) {
+export function CompareText({ plain, cipher, index}) {
   return (
     <>
       {plain}
       <br></br>
       {cipher}
       <br></br>
+      {index}
+      <br></br>
       <br></br>
     </>
   );
 }
 
-function Board({ cipher_text, substitution_mapper}) {
+export function Board({ cipher_text, substitution_mapper }) {
   const [word_break, set_word_break] = useState("20");
   const get_word_break = event => {
     if (event.target.value < 10) {
@@ -105,7 +107,7 @@ function ControllerTr({ getData, alphabet, substitution, statistics }) {
   );
 }
 
-function ControllerTable({getData, statistics, substitution_mapper}) {
+export function ControllerTable({getData, statistics, substitution_mapper}) {
   const postData = (alphabet, substitution) => {
     getData(alphabet, substitution);
   };
@@ -118,19 +120,23 @@ function ControllerTable({getData, statistics, substitution_mapper}) {
 
   return (
     <table border="1" cellSpacing="0">
-      <tr>
-        <th>alphabet</th>
-        <th>substitution</th>
-        <th>statistics</th>
-      </tr>
-      {statistics.map((s, i) => 
-      <ControllerTr
-        key={i}
-        getData={postData}
-        alphabet={s[0]}
-        substitution={substitution_mapper[s[0].charCodeAt(0)-0x41]}
-        statistics={s[1]}
-      />)}
+      <thead>
+        <tr>
+          <th>alphabet</th>
+          <th>substitution</th>
+          <th>statistics</th>
+        </tr>
+      </thead>
+      <tbody>
+        {statistics.map((s, i) => 
+        <ControllerTr
+          key={i}
+          getData={postData}
+          alphabet={s[0]}
+          substitution={substitution_mapper[s[0].charCodeAt(0)-0x41]}
+          statistics={s[1]}
+        />)}
+      </tbody>
    </table>
   );
 }
