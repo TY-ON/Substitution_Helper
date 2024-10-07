@@ -1,8 +1,9 @@
 import '../App.css';
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom';
 import { zip, replaceAt } from '../Utils/Util.js'
 
-export function CipherMenu({ getData, cipher_algorithm }) {
+export function CipherMenu({ getData, cipher_algorithm, cipher_text}) {
   /**Known Data
    * Cipher Text
    */
@@ -15,20 +16,18 @@ export function CipherMenu({ getData, cipher_algorithm }) {
       <h1>{cipher_algorithm}</h1>
       <div>
         <h4>Input Cipher Text: </h4>
-        <textarea name="cipher_text" onChange={postData} id="cipher_text"></textarea>
+        <textarea name="cipher_text" onChange={postData} id="cipher_text" value={cipher_text}></textarea>
       </div>
     </div>
   );
 }
 
-export function CompareText({ plain, cipher, index}) {
+export function CompareText({ plain, cipher}) {
   return (
     <>
       {plain}
       <br></br>
       {cipher}
-      <br></br>
-      {index}
       <br></br>
       <br></br>
     </>
@@ -156,7 +155,7 @@ export function ControllerTable({getData, statistics, substitution_mapper, marke
   );
 }
 
-function Controller({ getData, cipher_text, substitution_mapper}) {
+function Controller({ getData, cipher_text, substitution_mapper, marked, get_marked}) {
   const postData = (alphabet, substitution) => {
     if (substitution_mapper === false) {
       return;
@@ -253,14 +252,7 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
   stat = calculate_n_statistics(cipher_text, 3);
   const stat_3 = sort_statistics(stat);
 
-  const [marked, set_marked] = useState([
-    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
-      false, false, false, false, false, false, false, false, false, false, false, false, false],
-    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
-      false, false, false, false, false, false, false, false, false, false, false, false, false]
-  ])
-
-  const get_marked = (key, index, mark) => {
+  const post_marked = (key, index, mark) => {
     let marked_copy = [...marked];
     marked_copy[key] = mark;
 
@@ -277,7 +269,7 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
       }
       marked_copy[1][i] = marked_copy[key][index];
     }
-    set_marked(marked_copy);
+    get_marked(marked_copy);
   };
   
   const dummy_marked = [
@@ -297,7 +289,7 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
             statistics={statistics}
             substitution_mapper={substitution_mapper}
             marked={marked[0]}
-            get_marked={get_marked}
+            get_marked={post_marked}
             index="0"
           />
           <ControllerTable
@@ -305,7 +297,7 @@ function Controller({ getData, cipher_text, substitution_mapper}) {
             statistics={sorted_statistics}
             substitution_mapper={substitution_mapper}
             marked={marked[1]}
-            get_marked={get_marked}
+            get_marked={post_marked}
             index="1"
           />
         </div>
@@ -353,14 +345,63 @@ function MonoAlphabetic() {
     set_substitution_mapper(child_data);
   };
 
+  const [marked, set_marked] = useState([
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false],
+    [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+      false, false, false, false, false, false, false, false, false, false, false, false, false]
+  ])
+  const get_marked = (marked) => {
+    set_marked(marked);
+  }
+
+  const [params, setParams] = useSearchParams();
+
+  useEffect( () => {
+    console.log(params.get("cipher_object"));
+    if (params.get("cipher_object")) {
+      var cipher_object = params.get("cipher_object");
+      cipher_object = JSON.parse(cipher_object);
+      if (! cipher_object.cipher_text){
+        cipher_object.cipher_text = "";
+      }
+      if (! cipher_object.substitution_mapper){
+        cipher_object.substitution_mapper = 
+        ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", 
+          "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"];
+      }
+      if (! cipher_object.marked){
+        cipher_object.marked = [
+          [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+            false, false, false, false, false, false, false, false, false, false, false, false, false],
+          [false, false, false, false, false, false, false, false, false, false, false, false, false, 
+            false, false, false, false, false, false, false, false, false, false, false, false, false]
+        ];
+      }
+      set_cipher_text(cipher_object.cipher_text);
+      set_substitution_mapper(cipher_object.substitution_mapper);
+      set_marked(cipher_object.marked);
+    }
+  }, []);
+
+  useEffect( () => {
+    const cipher_object = {
+      type: "Mono",
+      cipher_text: cipher_text,
+      substitution_mapper: substitution_mapper,
+      marked: marked,
+    };
+    setParams({cipher_object: JSON.stringify(cipher_object)});
+  }, [cipher_text, substitution_mapper, marked]);
 
   return (
     <div className="MonoAlphabetic">
       <div id="wrapper">
         <div id='text_box'>
           <CipherMenu
-            cipher_algorithm={"Mono Alphabetic Cipher"}
             getData={get_cipher_data}
+            cipher_algorithm={"Mono Alphabetic Cipher"}
+            cipher_text={cipher_text}
           />
           <Board
             cipher_text={cipher_text}
@@ -371,6 +412,8 @@ function MonoAlphabetic() {
           getData={get_controlled_data}
           cipher_text={cipher_text}
           substitution_mapper={substitution_mapper}
+          marked={marked}
+          get_marked={get_marked}
         />
       </div>
     </div>

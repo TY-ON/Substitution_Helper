@@ -1,5 +1,6 @@
 import './App.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, useSearchParams } from 'react-router-dom'
 import MonoAlphabetic from './Ciphers/monoAlphabetic.js';
 import Vigenere from './Ciphers/vigenere.js';
 
@@ -19,6 +20,14 @@ function App() {
   const get_cipher_algorithm = (event) => {
     set_cipher_algorithm(event.target.value);
   };
+
+  const [params, set_params] = useSearchParams();
+
+  useEffect( () => {
+    let cipher_object = params.get("cipher_object");
+    cipher_object = JSON.parse(cipher_object);
+    set_cipher_algorithm(cipher_object.type);
+  }, [params]);
 
   return (
     <div id="app">

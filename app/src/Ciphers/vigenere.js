@@ -1,5 +1,6 @@
 import '../App.css';
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { replaceAt, zip, extract_nth } from '../Utils/Util.js'
 import { CipherMenu, CompareText, ControllerTable } from './monoAlphabetic.js'
 
@@ -18,8 +19,9 @@ function Board({ cipher_text, substitution_mapper, slice_length }) {
     const len = cipher_text.length;
     let plain_text = "-".repeat(len);
     for (let i = 0; i < len; i++) {
-      let substitute_text = substitution_mapper[i%slice_length][cipher_text.charCodeAt(i)-0x41];
-      if (typeof substitute_text === "undefined") {
+      let substitute_text = (cipher_text.charCodeAt(i)-0x41-substitution_mapper[i%slice_length]+26) % 26 + 0x61;
+      substitute_text = String.fromCharCode(substitute_text);
+      if (substitution_mapper[i%slice_length] === -1) {
         substitute_text = "-";
       }
       plain_text = replaceAt(plain_text, i, substitute_text);
@@ -27,28 +29,20 @@ function Board({ cipher_text, substitution_mapper, slice_length }) {
     return plain_text;
   };
 
-  const make_index = (cipher_text, slice_length) => {
-    let result = "1"+"-".repeat(slice_length-1);
-    return result.repeat(Math.floor(cipher_text.length / slice_length));
-  }
-
-  const split_texts = (cipher_text, plain_text, index_text, word_break) => {
+  const split_texts = (cipher_text, plain_text, word_break) => {
     let cipher = [];
     let plain = [];
-    let index = [];
     for (let i = 0; i < cipher_text.length/word_break; i++) {
       cipher.push(cipher_text.substring(i*word_break, (i+1)*word_break));
       plain.push(plain_text.substring(i*word_break, (i+1)*word_break));
-      index.push(index_text.substring(i*word_break, (i+1)*word_break));
     }
-    return [cipher, plain, index];
+    return [cipher, plain];
   };
 
-  const [cipher, plain, index] = split_texts(cipher_text, 
+  const [cipher, plain] = split_texts(cipher_text, 
     make_plain(cipher_text, slice_length, substitution_mapper), 
-    make_index(cipher_text, slice_length), word_break);
+    word_break);
   var text_pile = zip(plain, cipher);
-  text_pile = zip(text_pile, index);
   
   return (
     <div id="board">
@@ -60,7 +54,6 @@ function Board({ cipher_text, substitution_mapper, slice_length }) {
         {text_pile.map((s, i) => <CompareText key={i}
           plain={s[0]}
           cipher={s[1]}
-          index={s[2]}
         />)}
       </div>
       <div style={{display:"none"}}>{substitution_mapper[0]}</div>
@@ -78,7 +71,7 @@ function MainPanel({ getData, cipher_text, slice_length }) {
     if (val < 2) {
       val = 2;
     }
-    getData(val);
+    getData("slice_length", val);
   };
   
   const find_distance = (cipher_text, n) => {
@@ -158,12 +151,14 @@ function SubPanel({ getData, cipher_text, slice_length, bias, substitution_mappe
   const text = extract_nth(cipher_text, slice_length, bias);
 
   const postData = (alphabet, substitution) => {
-    if (substitution_mapper === false) {
-      return;
+    let diff = -1;
+    if (substitution === "") {
+      diff = -1;
     }
-    var substitution_mapper_copy = [...substitution_mapper];
-    substitution_mapper_copy[alphabet] = substitution;
-    getData(substitution_mapper_copy, bias);
+    else {
+      diff = (alphabet-substitution.charCodeAt(0)+0x61)+26;
+    }
+    getData("substitution_mapper", diff % 26);
   };
 
   const calculate_statistics = cipher_text => {
@@ -242,12 +237,29 @@ function SubPanel({ getData, cipher_text, slice_length, bias, substitution_mappe
     set_marked(marked_copy);
   };
 
+  const [substitution_mapper_extended, set_substitution_mapper_extended] = useState([]);
+  useEffect( () => {
+    let substitution_mapper_extended_copy = [];
+    if (substitution_mapper === -1) {
+      for (let i = 0; i < 26; i++) {
+        substitution_mapper_extended_copy.push('');
+      }
+    }
+    else {
+      for (let i = 0; i < 26; i++) {
+        let charCode = (i-substitution_mapper+26)%26+0x61;
+        substitution_mapper_extended_copy.push(String.fromCharCode(charCode));
+      }
+    }
+    set_substitution_mapper_extended(substitution_mapper_extended_copy);
+  }, [substitution_mapper]);
+
   return (
     <div id="panel">
       <ControllerTable
         getData={postData}
         statistics={statistics}
-        substitution_mapper={substitution_mapper}
+        substitution_mapper={substitution_mapper_extended}
         marked={marked[bias]}
         get_marked={get_marked}
         index={bias}
@@ -257,16 +269,16 @@ function SubPanel({ getData, cipher_text, slice_length, bias, substitution_mappe
 }
 
 function Panel({ getData, cipher_text, slice_length, panel_number, substitution_mapper }) {
-  const postData = (data, bias) => {
-    if (typeof data === "number") {
-      getData(data);
+  const postData = (key, data) => {
+    if (key === "substitution_mapper") {
+      var substitution_mapper_copy = [...substitution_mapper];
+      substitution_mapper_copy[panel_number-1] = data
+      getData(key, substitution_mapper_copy);
+      return;
     }
-    else if (typeof data === "object") {
-      let substitution_mapper_copy = [...substitution_mapper];
-      substitution_mapper_copy[bias] = data;
-      getData(substitution_mapper_copy);
-    }
+    getData(key, data);
   };
+
   if (panel_number === 0) {
     return (
     <MainPanel
@@ -290,23 +302,21 @@ function Panel({ getData, cipher_text, slice_length, panel_number, substitution_
 }
 
 function Controller({ getData, cipher_text, substitution_mapper, slice_length}) {
-  const postData = (child_data) => {
-    if (typeof child_data === "number")
+  const postData = (key, data) => {
+    if (key === "slice_length")
     {
-      const slice_length = child_data;
-      substitution_mapper = [];
-      let dummy = ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", 
-          "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"];
+      const slice_length = data;
+      let substitution_mapper_copy = [];
       let panel_menu_copy = ["on"];
       for (let i = 0; i < slice_length; i++) {
-        substitution_mapper.push(dummy);
+        substitution_mapper_copy.push(-1);
         panel_menu_copy.push("off");
       }
       set_panel_menu(panel_menu_copy);
-      getData(substitution_mapper, slice_length);
+      getData(substitution_mapper_copy, slice_length);
     }
-    else if (typeof child_data === "object") {
-      getData(child_data, slice_length);
+    else if (key === "substitution_mapper") {
+      getData(data, slice_length);
     }
   };
 
@@ -348,7 +358,7 @@ function Controller({ getData, cipher_text, substitution_mapper, slice_length}) 
   );
 }
 
-function Vegenere() {
+function Vigenere() {
   /** get known data from Cipher_Menu
    * Cipher Text, Algorithm
    */
@@ -361,12 +371,7 @@ function Vegenere() {
    * mapping texts
    */
   const [substitution_mapper, set_substitution_mapper] = useState(
-    [
-      ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", 
-        "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
-      ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", 
-        "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]
-    ]
+    [-1, -1]
   );
   
   const [slice_length, set_slice_length] = useState(2);
@@ -376,14 +381,51 @@ function Vegenere() {
     set_slice_length(slice_length);
   };
 
+  const [params, setParams] = useSearchParams();
+
+  useEffect( () => {
+    if (params.get("cipher_object")) {
+      var cipher_object = params.get("cipher_object");
+      cipher_object = JSON.parse(cipher_object);
+      
+      if (! cipher_object.cipher_text){
+        cipher_object.cipher_text = "";
+      }
+      if (! cipher_object.slice_length){
+        cipher_object.slice_length = 2;
+      }
+
+      if (! cipher_object.substitution_mapper || typeof cipher_object.substitution_mapper[0] === "object"){
+        cipher_object.substitution_mapper = [];
+        for (let i = 0; i < slice_length; i++) {
+          cipher_object.substitution_mapper.push(-1);
+        }
+      }
+      set_cipher_text(cipher_object.cipher_text);
+      set_substitution_mapper(cipher_object.substitution_mapper);
+      set_slice_length(cipher_object.slice_length);
+    }
+  }, []);
+
+  useEffect( () => {
+    const cipher_object = {
+      type: "Vigenere",
+      cipher_text: cipher_text,
+      substitution_mapper: substitution_mapper,
+      slice_length: slice_length,
+    };
+    setParams({cipher_object: JSON.stringify(cipher_object)});
+  }, [cipher_text, substitution_mapper, slice_length]);
+
 
   return (
     <div className="Vigenere">
       <div id="wrapper">
         <div id='text_box'>
           <CipherMenu
-            cipher_algorithm={"Vigenere Cipher"}
             getData={get_cipher_data}
+            cipher_algorithm={"Vigenere Cipher"}
+            cipher_text={cipher_text}
           />
           <Board
             cipher_text={cipher_text}
@@ -402,4 +444,4 @@ function Vegenere() {
   );
 }
 
-export default Vegenere;
+export default Vigenere;
