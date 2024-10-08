@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  react:
+    build: ./app
+    ports:
+      - "127.0.0.1:30000:3000"

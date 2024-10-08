@@ -61,7 +61,7 @@ function Board({ cipher_text, substitution_mapper, slice_length }) {
   );
 }
 
-function MainPanel({ getData, cipher_text, slice_length }) {
+function MainPanel({ getData, cipher_text, slice_length, substitution_mapper }) {
   const [find_length, set_find_length] = useState(3);
   const get_find_length = event => {
     set_find_length(parseInt(event.target.value));
@@ -125,6 +125,21 @@ function MainPanel({ getData, cipher_text, slice_length }) {
     return result / slice_length;
   };
 
+  const generate_key = (substitution_mapper) => {
+    let result = "";
+    for (let i = 0; i < substitution_mapper.length; i++) {
+      const element = substitution_mapper[i];
+      if (element != -1) {
+        result += String.fromCharCode(0x41+element);
+      }
+      else {
+        result += "-";
+      }
+    }
+    return result;
+  }
+  const generated_key = generate_key(substitution_mapper);
+
   const distance = find_distance(cipher_text, find_length);
   let frequency = calculate_frequency_avg(cipher_text, slice_length, 0);
   return (
@@ -141,6 +156,9 @@ function MainPanel({ getData, cipher_text, slice_length }) {
           <h4>Goal: 0.063</h4>
           <h4>Coincidence: </h4>
           {frequency}
+        </div>
+        <div>
+          <h4>key: {generated_key}</h4>
         </div>
       </div>
     </div>
@@ -285,6 +303,7 @@ function Panel({ getData, cipher_text, slice_length, panel_number, substitution_
       getData={postData}
       cipher_text={cipher_text}
       slice_length={slice_length}
+      substitution_mapper={substitution_mapper}
     />
   );
   }

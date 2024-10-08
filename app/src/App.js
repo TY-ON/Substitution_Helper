@@ -26,7 +26,9 @@ function App() {
   useEffect( () => {
     let cipher_object = params.get("cipher_object");
     cipher_object = JSON.parse(cipher_object);
-    set_cipher_algorithm(cipher_object.type);
+    if (cipher_object && cipher_object.type) {
+      set_cipher_algorithm(cipher_object.type);
+    }
   }, [params]);
 
   return (

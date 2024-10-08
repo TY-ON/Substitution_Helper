@@ -358,14 +358,13 @@ function MonoAlphabetic() {
   const [params, setParams] = useSearchParams();
 
   useEffect( () => {
-    console.log(params.get("cipher_object"));
     if (params.get("cipher_object")) {
       var cipher_object = params.get("cipher_object");
       cipher_object = JSON.parse(cipher_object);
       if (! cipher_object.cipher_text){
         cipher_object.cipher_text = "";
       }
-      if (! cipher_object.substitution_mapper){
+      if ((! cipher_object.substitution_mapper) || typeof cipher_object.substitution_mapper[0] === "number"){
         cipher_object.substitution_mapper = 
         ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", 
           "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"];
