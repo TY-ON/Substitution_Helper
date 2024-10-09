@@ -1,7 +1,11 @@
-version: '3'
+version: '3.5'
 
 services:
   react:
     build: ./app
-    ports:
-      - "127.0.0.1:30000:3000"
+    networks:
+      cipher_proxy:
+        ipv4_address: 172.30.0.10
+networks:
+  cipher_proxy:
+    external: true
